@@ -5,17 +5,20 @@
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+int ix = -1, iy = -1;
+float angleX = 0, angleY = 0;
+float zoom = 1.0;
+
+GLfloat position[] = { -200.0, 200.0, 200.0, 1.0 };
 
 void initLights()
 {
     GLfloat ambient[] = { 0.2, 0.2, 0.2, 1.0 };
-    GLfloat position[] = { -50.0, 50.0, 50.0, 1.0 };
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-    glLightfv(GL_LIGHT0, GL_POSITION, position);
 }
 
 bool initGL()
@@ -27,6 +30,8 @@ bool initGL()
     glLoadIdentity();
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_AUTO_NORMAL);
     initLights();
 
     glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -49,16 +54,22 @@ void render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    //TODO: reset this rotation per viewport
+    glRotatef(angleX, 1, 0, 0);
+    glRotatef(angleY, 0, 1, 0);
+
+    glScalef(zoom, zoom, zoom);
+
+    glLightfv(GL_LIGHT0, GL_POSITION, position);
+
     glPushMatrix();
         glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-        glRotatef(45, 1, 1, 1);
         glutSolidTeapot(20);
     glPopMatrix();
 
     glPushMatrix();
-        glRotatef(45, 0, 1, 0);
         glTranslatef(100, 0, 0);
         glutSolidTeapot(20);
     glPopMatrix();
@@ -83,9 +94,11 @@ void reshape(int w, int h)
         float d = h/2.0;
         glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
     }
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
-int ix, iy;
 void handleMouse(int button, int state, int x, int y)
 {
     printf("mouse: %d\tx: %d\ty: %d\n", button, x, y);
@@ -101,14 +114,36 @@ void handleMouse(int button, int state, int x, int y)
             else
             {
                 printf("Left up: dx: %d\tdy: %d\n", ix-x, iy-y);
+                angleX = 0;
+                angleY = 0;
+                ix = -1;
+                iy = -1;
             }
             break;
         case 3: // scroll up
+            zoom = 1.1;
+            render();
+            zoom = 1;
             printf("scroll up\n");
             break;
         case 4: // scroll down
+            zoom = 0.9;
+            render();
+            zoom = 1;
             printf("scroll down\n");
             break;
+    }
+}
+
+void mouseMove(int x, int y)
+{
+    if(ix != -1 && iy != -1)
+    {
+        angleX = y-iy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
+        angleY = x-ix; // moving the mouse left/right (ix & x) rotates the scene on the Y axis
+        render();
+        ix = x;
+        iy = y;
     }
 }
 
@@ -128,6 +163,7 @@ int main(int argc, char* args[])
         return 1;
     }
 
+    glutMotionFunc(mouseMove);
     glutMouseFunc(handleMouse);
     glutDisplayFunc(render);
     glutReshapeFunc(reshape);
