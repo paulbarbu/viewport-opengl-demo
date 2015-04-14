@@ -30,12 +30,7 @@ void render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glBegin(GL_QUADS);
-        glVertex2f(-0.5f, -0.5f);
-        glVertex2f( 0.5f, -0.5f);
-        glVertex2f( 0.5f,  0.5f);
-        glVertex2f(-0.5f,  0.5f);
-    glEnd();
+    glutSolidTeapot(20);
 
     glutSwapBuffers();
 }
@@ -49,11 +44,13 @@ void reshape(int w, int h)
 
     if (w <= h)
     {
-        glOrtho(-w/2.0, w/2.0, (GLfloat)h/(GLfloat)w, (GLfloat)h/(GLfloat)w, -w/2.0, w/2.0);
+        float d = w/2.0;
+        glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
     }
     else
     {
-        glOrtho((GLfloat)w/(GLfloat)h, (GLfloat)w/(GLfloat)h, -h/2.0, h/2.0, -h/2.0, h/2.0);
+        float d = h/2.0;
+        glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
     }
 }
 
