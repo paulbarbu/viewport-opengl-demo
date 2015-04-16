@@ -5,8 +5,8 @@
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
-int ix = -1, iy = -1;
-float angleX = 0, angleY = 0;
+int aix = -1, aiy = -1, tix = 0, tiy = 0;
+float angleX = 0, angleY = 0, translateY = 0, translateX = 0;
 float zoom = 1.0;
 
 GLfloat position[] = { -200.0, 200.0, 200.0, 1.0 };
@@ -54,24 +54,27 @@ void render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //TODO: reset this rotation per viewport
-    glRotatef(angleX, 1, 0, 0);
-    glRotatef(angleY, 0, 1, 0);
-
-    glScalef(zoom, zoom, zoom);
-
     glLightfv(GL_LIGHT0, GL_POSITION, position);
 
     glPushMatrix();
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-        glutSolidTeapot(20);
-    glPopMatrix();
+        //TODO: reset these per viewport
+        glScalef(zoom, zoom, zoom);
+        glTranslatef(translateX, translateY, 0);
+        glRotatef(angleX, 1, 0, 0);
+        glRotatef(angleY, 0, 1, 0);
 
-    glPushMatrix();
-        glTranslatef(100, 0, 0);
-        glutSolidTeapot(20);
+        glPushMatrix();
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+            glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+            glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+            glutSolidTeapot(20);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(100, 0, 0);
+            glutSolidTeapot(20);
+        glPopMatrix();
+
     glPopMatrix();
 
     glutSwapBuffers();
@@ -104,32 +107,42 @@ void handleMouse(int button, int state, int x, int y)
     printf("mouse: %d\tx: %d\ty: %d\n", button, x, y);
     switch(button)
     {
+        case GLUT_RIGHT_BUTTON:
+            if(state == GLUT_DOWN)
+            {
+                aix = x;
+                aiy = y;
+                printf("Right click down\n");
+            }
+            else
+            {
+                printf("Right up: dx: %d\tdy: %d\n", aix-x, aiy-y);
+                aix = -1;
+                aiy = -1;
+            }
+            break;
         case GLUT_LEFT_BUTTON:
             if(state == GLUT_DOWN)
             {
-                ix = x;
-                iy = y;
+                tix = x;
+                tiy = y;
                 printf("Left click down\n");
             }
             else
             {
-                printf("Left up: dx: %d\tdy: %d\n", ix-x, iy-y);
-                angleX = 0;
-                angleY = 0;
-                ix = -1;
-                iy = -1;
+                printf("Left up: dx: %d\tdy: %d\n", tix-x, tiy-y);
+                tix = 0;
+                tiy = 0;
             }
             break;
         case 3: // scroll up
-            zoom = 1.1;
+            zoom += 0.1;
             render();
-            zoom = 1;
             printf("scroll up\n");
             break;
         case 4: // scroll down
-            zoom = 0.9;
+            zoom -= 0.1;
             render();
-            zoom = 1;
             printf("scroll down\n");
             break;
     }
@@ -137,13 +150,41 @@ void handleMouse(int button, int state, int x, int y)
 
 void mouseMove(int x, int y)
 {
-    if(ix != -1 && iy != -1)
+    bool doRender = false;
+    if(aix != -1 && aiy != -1)
     {
-        angleX = y-iy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
-        angleY = x-ix; // moving the mouse left/right (ix & x) rotates the scene on the Y axis
-        render();
-        ix = x;
-        iy = y;
+        angleX += y-aiy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
+        angleY += x-aix; // moving the mouse left/right (ix & x) rotates the scene on the Y axis
+        aix = x;
+        aiy = y;
+        doRender = true;
+    }
+
+    if(tix != 0 && tiy != 0)
+    {
+        translateY += tiy-y; // moving the mouse up/down (iy & y) translated the scene on the X axis
+        translateX += x-tix; // moving the mouse left/right (ix & x) translates the scene on the Y axis
+        tix = x;
+        tiy = y;
+        doRender = true;
+    }
+
+    if(doRender) render();
+}
+
+void keyPress(unsigned char key, int x, int y)
+{
+    printf("Key press: %c at x: %d\ty: %d", key, x, y);
+    switch(key)
+    {
+        case 'r':
+            angleY = 0;
+            angleX = 0;
+            zoom = 1;
+            translateY = 0;
+            translateX = 1;
+            render();
+            break;
     }
 }
 
@@ -163,6 +204,7 @@ int main(int argc, char* args[])
         return 1;
     }
 
+    glutKeyboardFunc(keyPress);
     glutMotionFunc(mouseMove);
     glutMouseFunc(handleMouse);
     glutDisplayFunc(render);
