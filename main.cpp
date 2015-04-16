@@ -181,14 +181,15 @@ void render()
     }
 }
 
-void reshape(int width, int height)
+void resize(int width, int height)
 {
     w = width/2;
     h = height/2;
-    activeViewport = -1;
+
+    activeViewport = -1; // all viewports shall now be updated
 }
 
-void handleMouse(int button, int state, int x, int y)
+void mousePress(int button, int state, int x, int y)
 {
     printf("mouse: %d\tx: %d\ty: %d\n", button, x, y);
     switch(button)
@@ -297,9 +298,9 @@ int main(int argc, char* args[])
 
     glutKeyboardFunc(keyPress);
     glutMotionFunc(mouseMove);
-    glutMouseFunc(handleMouse);
+    glutMouseFunc(mousePress);
     glutDisplayFunc(render);
-    glutReshapeFunc(reshape);
+    glutReshapeFunc(resize);
     glutMainLoop();
 
     return 0;
