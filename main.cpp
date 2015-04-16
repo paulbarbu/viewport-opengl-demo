@@ -186,38 +186,42 @@ void display()
 
     glPopMatrix();
 
-    // glPushAttrib();
-    //     glMatrixMode(GL_PROJECTION);
-    //     glLoadIdentity();
-    //     if (w <= h)
-    //     {
-    //         float d = w/2.0;
-    //         glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
-    //     }
-    //     else
-    //     {
-    //         float d = h/2.0;
-    //         glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
-    //     }
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
 
-    //     glMatrixMode(GL_MODELVIEW);
-    //     glLoadIdentity();
+        //TODO: clean this up
+        float d;
+        if (w <= h)
+        {
+            d = w/2.0;
+            glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
+        }
+        else
+        {
+            d = h/2.0;
+            glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
+        }
 
-    //     glDisable(GL_DEPTH_TEST);
-    //     glDisable(GL_CULL_FACE);
-    //     glDisable(GL_LIGHTING);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 
-    //     glColor3f(0, 1, 0);
-    //     glPushMatrix();
-    //         glBegin(GL_QUADS);
-    //             glVertex3f(-5.0f, 5.0f, 0.0f);
-    //             glVertex3f(-5.0f, -5.0f, 0.0f);
-    //             glVertex3f(5.0f, -5.0f, 0.0f);
-    //             glVertex3f(5.0f, 5.0f, 0.0f);
-    //         glEnd();
-    //     glPopMatrix();
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_LIGHTING);
 
-    // glPopAttrib();
+        glLineWidth(d * 2/100);
+        glColor3f(0, 1, 0);
+        glPushMatrix();
+            glBegin(GL_LINE_LOOP);
+                glVertex3f(-50.0f, 50.0f, 0.0f);
+                glVertex3f(-50.0f, -50.0f, 0.0f);
+                glVertex3f(50.0f, -50.0f, 0.0f);
+                glVertex3f(50.0f, 50.0f, 0.0f);
+            glEnd();
+        glPopMatrix();
+
+    glPopAttrib();
 
     glutSwapBuffers();
 }
