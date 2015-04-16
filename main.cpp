@@ -9,7 +9,43 @@ int aix = -1, aiy = -1, tix = 0, tiy = 0;
 float angleX = 0, angleY = 0, translateY = 0, translateX = 0;
 float zoom = 1.0;
 
+int w, h;
+int activeViewport = -1;
+
 GLfloat position[] = { -200.0, 200.0, 200.0, 1.0 };
+
+void setActiveViewport(int x, int y)
+{
+    if(x < 0 && y < 0)
+    {
+        activeViewport = -1;
+        return;
+    }
+
+    if (x < w && y < h)
+    {
+        activeViewport = 0; // top left
+        return;
+    }
+
+    if (x > w && y < h)
+    {
+        activeViewport = 1; // top right
+        return;
+    }
+
+    if (x < w && y > h) // bottom left
+    {
+        activeViewport = 2;
+        return;
+    }
+
+    if (x > w && y > h)
+    {
+        activeViewport = 3; // bottom right
+        return;
+    }
+}
 
 void initLights()
 {
@@ -29,6 +65,7 @@ bool initGL()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    glEnable(GL_SCISSOR_TEST);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     glEnable(GL_AUTO_NORMAL);
@@ -46,11 +83,28 @@ bool initGL()
     return true;
 }
 
-void render()
+void display()
 {
     GLfloat mat_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
     GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
     GLfloat mat_shininess[] = { 50.0 };
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    if (w <= h)
+    {
+        float d = w/2.0;
+        glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
+    }
+    else
+    {
+        float d = h/2.0;
+        glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
+    }
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -75,31 +129,63 @@ void render()
             glutSolidTeapot(20);
         glPopMatrix();
 
+        glPushMatrix();
+            glTranslatef(-100, 0, 0);
+            glutSolidTeapot(20);
+        glPopMatrix();
+
     glPopMatrix();
 
     glutSwapBuffers();
 }
 
-void reshape(int w, int h)
+void render()
 {
-    glViewport(0, 0, w, h);
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    //TODO: create a viewport suruct
+    //TODO: viewport vector
+    //TODO: set the activeViewport (which is an instance of the struct) to the viewports[num_active]
+    //TODO: if num_active = -1 set it in turns & display()
+    //TODO: display will use activeViewport->zoom, etc.
 
-    if (w <= h)
+    // top left
+    if(activeViewport == 0 || activeViewport == -1)
     {
-        float d = w/2.0;
-        glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
-    }
-    else
-    {
-        float d = h/2.0;
-        glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
+        glViewport(0, h, w, h);
+        glScissor(0, h, w, h);
+        display();
     }
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    // top right
+    if(activeViewport == 1 || activeViewport == -1)
+    {
+        glViewport(w, h, w, h);
+        glScissor(w, h, w, h);
+        display();
+    }
+
+    // bottom left
+    if(activeViewport == 2 || activeViewport == -1)
+    {
+        glViewport(0, 0, w, h);
+        glScissor(0, 0, w, h);
+        display();
+    }
+
+    // bottom right
+    if(activeViewport == 3 || activeViewport == -1)
+    {
+        glViewport(w, 0, w, h);
+        glScissor(w, 0, w, h);
+        display();
+    }
+}
+
+void reshape(int width, int height)
+{
+    w = width/2;
+    h = height/2;
+    activeViewport = -1;
 }
 
 void handleMouse(int button, int state, int x, int y)
@@ -137,12 +223,17 @@ void handleMouse(int button, int state, int x, int y)
             break;
         case 3: // scroll up
             zoom += 0.1;
+            setActiveViewport(x, y);
             render();
             printf("scroll up\n");
             break;
         case 4: // scroll down
-            zoom -= 0.1;
-            render();
+            if(zoom > 0.1)
+            {
+                zoom -= 0.1;
+                setActiveViewport(x, y);
+                render();
+            }
             printf("scroll down\n");
             break;
     }
