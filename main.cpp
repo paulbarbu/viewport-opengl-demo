@@ -3,46 +3,97 @@
 #include <GL/glu.h>
 #include <stdio.h>
 
+//TODO: mark the active viewport
+//TODO: lock/unlock - when locked, transformations apply to everything
+
+struct viewport
+{
+    int aix, aiy, tix, tiy;
+    float angleX, angleY, translateX, translateY;
+    float zoom;
+
+    float iAngleX, iAngleY, iTranslateX, iTranslateY;
+    float iZoom;
+
+    viewport()
+    {
+        aix = aiy = -1;
+        tix = tiy = 0;
+        init(0, 0, 0, 0, 1);
+    }
+
+    void init(float ax, float ay, float tx, float ty, float z)
+    {
+        angleX = iAngleX = ax;
+        angleY = iAngleY = ay;
+        translateX = iTranslateX = tx;
+        translateY = iTranslateY = ty;
+        zoom = iZoom = z;
+    }
+
+    void reset()
+    {
+        aix = aiy = -1;
+        tix = tiy = 0;
+
+        angleX = iAngleX;
+        angleY = iAngleY;
+        translateX = iTranslateX;
+        translateY = iTranslateY;
+        zoom = iZoom;
+    }
+
+} *activeViewport, viewports[4];
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
-int aix = -1, aiy = -1, tix = 0, tiy = 0;
-float angleX = 0, angleY = 0, translateY = 0, translateX = 0;
-float zoom = 1.0;
 
 int w, h;
-int activeViewport = -1;
 
-GLfloat position[] = { -200.0, 200.0, 200.0, 1.0 };
+GLfloat lightPosition[] = {-200, 200, 200, 1};
 
 void setActiveViewport(int x, int y)
 {
     if(x < 0 && y < 0)
     {
-        activeViewport = -1;
+        activeViewport = NULL;
+        printf("All viewports active\n");
         return;
     }
 
     if (x < w && y < h)
     {
-        activeViewport = 0; // top left
+        glViewport(0, h, w, h);
+        glScissor(0, h, w, h);
+        activeViewport = &viewports[0]; // top left
+        printf("Top left viewport active\n");
         return;
     }
 
     if (x > w && y < h)
     {
-        activeViewport = 1; // top right
+        glViewport(w, h, w, h);
+        glScissor(w, h, w, h);
+        activeViewport = &viewports[1]; // top right
+        printf("Top right viewport active\n");
         return;
     }
 
     if (x < w && y > h) // bottom left
     {
-        activeViewport = 2;
+        glViewport(0, 0, w, h);
+        glScissor(0, 0, w, h);
+        activeViewport = &viewports[2];
+        printf("Bottom left viewport active\n");
         return;
     }
 
     if (x > w && y > h)
     {
-        activeViewport = 3; // bottom right
+        glViewport(w, 0, w, h);
+        glScissor(w, 0, w, h);
+        activeViewport = &viewports[3]; // bottom right
+        printf("Bottom right viewport active\n");
         return;
     }
 }
@@ -85,9 +136,9 @@ bool initGL()
 
 void display()
 {
-    GLfloat mat_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    GLfloat mat_shininess[] = { 50.0 };
+    GLfloat mat_diffuse[] = {1, 1, 1, 1};
+    GLfloat mat_specular[] = {1, 1, 1, 1};
+    GLfloat mat_shininess[] = {50};
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -108,14 +159,13 @@ void display()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glLightfv(GL_LIGHT0, GL_POSITION, position);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glPushMatrix();
-        //TODO: reset these per viewport
-        glScalef(zoom, zoom, zoom);
-        glTranslatef(translateX, translateY, 0);
-        glRotatef(angleX, 1, 0, 0);
-        glRotatef(angleY, 0, 1, 0);
+        glScalef(activeViewport->zoom, activeViewport->zoom, activeViewport->zoom);
+        glTranslatef(activeViewport->translateX, activeViewport->translateY, 0);
+        glRotatef(activeViewport->angleX, 1, 0, 0);
+        glRotatef(activeViewport->angleY, 0, 1, 0);
 
         glPushMatrix();
             glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
@@ -136,47 +186,73 @@ void display()
 
     glPopMatrix();
 
+    // glPushAttrib();
+    //     glMatrixMode(GL_PROJECTION);
+    //     glLoadIdentity();
+    //     if (w <= h)
+    //     {
+    //         float d = w/2.0;
+    //         glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
+    //     }
+    //     else
+    //     {
+    //         float d = h/2.0;
+    //         glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
+    //     }
+
+    //     glMatrixMode(GL_MODELVIEW);
+    //     glLoadIdentity();
+
+    //     glDisable(GL_DEPTH_TEST);
+    //     glDisable(GL_CULL_FACE);
+    //     glDisable(GL_LIGHTING);
+
+    //     glColor3f(0, 1, 0);
+    //     glPushMatrix();
+    //         glBegin(GL_QUADS);
+    //             glVertex3f(-5.0f, 5.0f, 0.0f);
+    //             glVertex3f(-5.0f, -5.0f, 0.0f);
+    //             glVertex3f(5.0f, -5.0f, 0.0f);
+    //             glVertex3f(5.0f, 5.0f, 0.0f);
+    //         glEnd();
+    //     glPopMatrix();
+
+    // glPopAttrib();
+
     glutSwapBuffers();
 }
 
 void render()
 {
-
-    //TODO: create a viewport suruct
-    //TODO: viewport vector
-    //TODO: set the activeViewport (which is an instance of the struct) to the viewports[num_active]
-    //TODO: if num_active = -1 set it in turns & display()
-    //TODO: display will use activeViewport->zoom, etc.
-
-    // top left
-    if(activeViewport == 0 || activeViewport == -1)
+    // update all viewports
+    if(activeViewport == NULL)
     {
+        // top left
         glViewport(0, h, w, h);
         glScissor(0, h, w, h);
+        activeViewport = &viewports[0];
         display();
-    }
 
-    // top right
-    if(activeViewport == 1 || activeViewport == -1)
-    {
+        // top right
         glViewport(w, h, w, h);
         glScissor(w, h, w, h);
+        activeViewport = &viewports[1];
         display();
-    }
 
-    // bottom left
-    if(activeViewport == 2 || activeViewport == -1)
-    {
+        // bottom left
         glViewport(0, 0, w, h);
         glScissor(0, 0, w, h);
+        activeViewport = &viewports[2];
         display();
-    }
 
-    // bottom right
-    if(activeViewport == 3 || activeViewport == -1)
-    {
+        // bottom right
         glViewport(w, 0, w, h);
         glScissor(w, 0, w, h);
+        activeViewport = &viewports[3];
+        display();
+    }
+    else
+    {
         display();
     }
 }
@@ -186,53 +262,54 @@ void resize(int width, int height)
     w = width/2;
     h = height/2;
 
-    activeViewport = -1; // all viewports shall now be updated
+    activeViewport = NULL; // all viewports shall now be updated
 }
 
 void mousePress(int button, int state, int x, int y)
 {
     printf("mouse: %d\tx: %d\ty: %d\n", button, x, y);
+
+    setActiveViewport(x, y);
+
     switch(button)
     {
         case GLUT_RIGHT_BUTTON:
             if(state == GLUT_DOWN)
             {
-                aix = x;
-                aiy = y;
+                activeViewport->aix = x;
+                activeViewport->aiy = y;
                 printf("Right click down\n");
             }
             else
             {
-                printf("Right up: dx: %d\tdy: %d\n", aix-x, aiy-y);
-                aix = -1;
-                aiy = -1;
+                printf("Right up: dx: %d\tdy: %d\n", activeViewport->aix-x, activeViewport->aiy-y);
+                activeViewport->aix = -1;
+                activeViewport->aiy = -1;
             }
             break;
         case GLUT_LEFT_BUTTON:
             if(state == GLUT_DOWN)
             {
-                tix = x;
-                tiy = y;
+                activeViewport->tix = x;
+                activeViewport->tiy = y;
                 printf("Left click down\n");
             }
             else
             {
-                printf("Left up: dx: %d\tdy: %d\n", tix-x, tiy-y);
-                tix = 0;
-                tiy = 0;
+                printf("Left up: dx: %d\tdy: %d\n", activeViewport->tix-x, activeViewport->tiy-y);
+                activeViewport->tix = 0;
+                activeViewport->tiy = 0;
             }
             break;
         case 3: // scroll up
-            zoom += 0.1;
-            setActiveViewport(x, y);
+            activeViewport->zoom += 0.1;
             render();
             printf("scroll up\n");
             break;
         case 4: // scroll down
-            if(zoom > 0.1)
+            if(activeViewport->zoom > 0.1)
             {
-                zoom -= 0.1;
-                setActiveViewport(x, y);
+                activeViewport->zoom -= 0.1;
                 render();
             }
             printf("scroll down\n");
@@ -243,21 +320,21 @@ void mousePress(int button, int state, int x, int y)
 void mouseMove(int x, int y)
 {
     bool doRender = false;
-    if(aix != -1 && aiy != -1)
+    if(activeViewport->aix != -1 && activeViewport->aiy != -1)
     {
-        angleX += y-aiy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
-        angleY += x-aix; // moving the mouse left/right (ix & x) rotates the scene on the Y axis
-        aix = x;
-        aiy = y;
+        activeViewport->angleX += y-activeViewport->aiy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
+        activeViewport->angleY += x-activeViewport->aix; // moving the mouse left/right (ix & x) rotates the scene on the Y axis
+        activeViewport->aix = x;
+        activeViewport->aiy = y;
         doRender = true;
     }
 
-    if(tix != 0 && tiy != 0)
+    if(activeViewport->tix != 0 && activeViewport->tiy != 0)
     {
-        translateY += tiy-y; // moving the mouse up/down (iy & y) translated the scene on the X axis
-        translateX += x-tix; // moving the mouse left/right (ix & x) translates the scene on the Y axis
-        tix = x;
-        tiy = y;
+        activeViewport->translateY += activeViewport->tiy-y; // moving the mouse up/down (iy & y) translated the scene on the X axis
+        activeViewport->translateX += x-activeViewport->tix; // moving the mouse left/right (ix & x) translates the scene on the Y axis
+        activeViewport->tix = x;
+        activeViewport->tiy = y;
         doRender = true;
     }
 
@@ -266,22 +343,38 @@ void mouseMove(int x, int y)
 
 void keyPress(unsigned char key, int x, int y)
 {
-    printf("Key press: %c at x: %d\ty: %d", key, x, y);
+    printf("Key press: %d at x: %d\ty: %d\n", key, x, y);
+    printf("Modifiers: %d\n", glutGetModifiers());
+
+    setActiveViewport(x, y);
+
     switch(key)
     {
-        case 'r':
-            angleY = 0;
-            angleX = 0;
-            zoom = 1;
-            translateY = 0;
-            translateX = 1;
+        case 'R':
+            activeViewport = NULL;
+
+            for(int i=0; i<4; i++)
+            {
+                viewports[i].reset();
+            }
             render();
+            break;
+        case 'r':
+            activeViewport->reset();
+            render();
+            break;
+        case 27: //ESC
+            glutLeaveMainLoop();
             break;
     }
 }
 
 int main(int argc, char* args[])
 {
+    viewports[0].init(45, 45, 0, 0, 1);
+    viewports[2].init(0, -90, 0, 0, 1);
+    viewports[3].init(-90, 0, 0, 0, 1);
+
     glutInit(&argc, args);
 
     glutInitContextVersion(2, 1);
