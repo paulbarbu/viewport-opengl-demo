@@ -3,7 +3,7 @@
 #include <GL/glu.h>
 #include <stdio.h>
 
-//TODO: lock/unlock - when locked, transformations apply to everything
+//TODO: instructions & help
 
 struct viewport
 {
@@ -42,13 +42,14 @@ struct viewport
         zoom = iZoom;
     }
 
-} *activeViewport = NULL, viewports[4];
+} *activeViewport = NULL, viewports[4], phantomViewport;
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 int w, h;
 float viewW, viewH, d;
+bool locked = false;
 
 GLfloat lightPosition[] = {-200, 200, 200, 1};
 
@@ -117,10 +118,17 @@ void setActiveViewport(int x, int y)
     glScissor(w, 0, w, h);
     display2DOverlay(false);
 
+    if(locked)
+    {
+        activeViewport = &phantomViewport;
+        return;
+    }
+
     if(x < 0 && y < 0)
     {
         activeViewport = NULL;
         printf("All viewports active\n");
+        return;
     }
 
     if (x < w && y < h)
@@ -240,7 +248,7 @@ void display(bool overlay = true)
 void render()
 {
     // update all viewports
-    if(activeViewport == NULL)
+    if(activeViewport == NULL && !locked)
     {
         // top left
         glViewport(0, h, w, h);
@@ -264,6 +272,15 @@ void render()
         glViewport(w, 0, w, h);
         glScissor(w, 0, w, h);
         activeViewport = &viewports[3];
+        display(false);
+
+        activeViewport = NULL;
+    }
+    else if(locked)
+    {
+        glViewport(0, 0, w*2, h*2);
+        glScissor(0, 0, w*2, h*2);
+        activeViewport = &phantomViewport;
         display(false);
     }
     else
@@ -388,10 +405,32 @@ void keyPress(unsigned char key, int x, int y)
             {
                 viewports[i].reset();
             }
+            phantomViewport.reset();
+
             render();
             break;
         case 'r':
             activeViewport->reset();
+            render();
+            break;
+        case 'l':
+            locked = !locked;
+
+            printf("Locked: %d\n", locked);
+            activeViewport = NULL;
+
+            if(!locked)
+            {
+                for(int i=0; i<4; ++i)
+                {
+                    viewports[i].angleX = phantomViewport.angleX;
+                    viewports[i].angleY = phantomViewport.angleY;
+                    viewports[i].translateX = phantomViewport.translateX;
+                    viewports[i].translateY = phantomViewport.translateY;
+                    viewports[i].zoom = phantomViewport.zoom;
+                }
+            }
+
             render();
             break;
         case 27: //ESC
