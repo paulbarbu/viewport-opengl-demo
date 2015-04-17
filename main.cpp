@@ -43,7 +43,7 @@ struct viewport
         zoom = iZoom;
     }
 
-} *activeViewport, viewports[4];
+} *activeViewport = NULL, viewports[4];
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -256,10 +256,10 @@ void display3DScene()
 }
 
 
-void display()
+void display(bool overlay = true)
 {
     display3DScene();
-    if(activeViewport != NULL)
+    if(activeViewport != NULL && overlay)
     {
         display2DOverlay();
     }
@@ -276,25 +276,25 @@ void render()
         glViewport(0, h, w, h);
         glScissor(0, h, w, h);
         activeViewport = &viewports[0];
-        display();
+        display(false);
 
         // top right
         glViewport(w, h, w, h);
         glScissor(w, h, w, h);
         activeViewport = &viewports[1];
-        display();
+        display(false);
 
         // bottom left
         glViewport(0, 0, w, h);
         glScissor(0, 0, w, h);
         activeViewport = &viewports[2];
-        display();
+        display(false);
 
         // bottom right
         glViewport(w, 0, w, h);
         glScissor(w, 0, w, h);
         activeViewport = &viewports[3];
-        display();
+        display(false);
     }
     else
     {
@@ -304,6 +304,7 @@ void render()
 
 void resize(int width, int height)
 {
+    printf("Resize: w=%d\th=%d\n", width, height);
     w = width/2;
     h = height/2;
 
@@ -416,7 +417,6 @@ void keyPress(unsigned char key, int x, int y)
 
 int main(int argc, char* args[])
 {
-    activeViewport = NULL;
     viewports[0].init(45, 45, 0, 0, 1);
     viewports[2].init(0, -90, 0, 0, 1);
     viewports[3].init(-90, 0, 0, 0, 1);
@@ -440,6 +440,7 @@ int main(int argc, char* args[])
     glutMouseFunc(mousePress);
     glutDisplayFunc(render);
     glutReshapeFunc(resize);
+
     glutMainLoop();
 
     return 0;
