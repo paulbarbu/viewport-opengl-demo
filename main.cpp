@@ -50,6 +50,8 @@ const int SCREEN_HEIGHT = 480;
 
 int w, h;
 
+float viewW, viewH, d;
+
 GLfloat lightPosition[] = {-200, 200, 200, 1};
 
 void setActiveViewport(int x, int y)
@@ -100,7 +102,7 @@ void setActiveViewport(int x, int y)
 
 void initLights()
 {
-    GLfloat ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+    GLfloat ambient[] = {0.2, 0.2, 0.2, 1};
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -122,7 +124,7 @@ bool initGL()
     glEnable(GL_AUTO_NORMAL);
     initLights();
 
-    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClearColor(0, 0, 0, 1);
 
     GLenum error = glGetError();
     if(error != GL_NO_ERROR)
@@ -134,26 +136,66 @@ bool initGL()
     return true;
 }
 
-void display()
+void setProjection()
 {
-    GLfloat mat_diffuse[] = {1, 1, 1, 1};
-    GLfloat mat_specular[] = {1, 1, 1, 1};
-    GLfloat mat_shininess[] = {50};
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
     if (w <= h)
     {
-        float d = w/2.0;
-        glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
+        d = w/2.0;
+        viewW = d;
+        viewH = d*(float)h/(float)w;
+
     }
     else
     {
-        float d = h/2.0;
-        glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
+        d = h/2.0;
+        viewW = d*(float)w/(float)h;
+        viewH = d;
     }
 
+    glOrtho(-viewW, viewW, -viewH, viewH, -d, d);
+}
+
+void display2DOverlay()
+{
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        setProjection();
+        float lineWidth = d * 2.0/100.0;
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_LIGHTING);
+
+        glLineWidth(lineWidth);
+        glColor3f(0, 1, 0);
+
+        glPushMatrix();
+            glBegin(GL_LINE_LOOP);
+                glVertex3f(-viewW, viewH, 0); // top left
+                glVertex3f(-viewW, -viewH, 0); // bottom right
+                glVertex3f(viewW, -viewH, 0); // bottom left
+                glVertex3f(viewW, viewH, 0); // top left
+            glEnd();
+        glPopMatrix();
+
+    glPopAttrib();
+}
+
+void display3DScene()
+{
+    GLfloat mat_diffuse[] = {1, 1, 1, 1};
+    GLfloat mat_specular[] = {1, 1, 1, 1};
+    GLfloat mat_shininess[] = {50};
+
+    setProjection();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -185,43 +227,13 @@ void display()
         glPopMatrix();
 
     glPopMatrix();
+}
 
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
 
-        //TODO: clean this up
-        float d;
-        if (w <= h)
-        {
-            d = w/2.0;
-            glOrtho(-d, d, -d*(float)h/(float)w, d*(float)h/(float)w, -d, d);
-        }
-        else
-        {
-            d = h/2.0;
-            glOrtho(-d*(float)w/(float)h, d*(float)w/(float)h, -d, d, -d, d);
-        }
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_LIGHTING);
-
-        glLineWidth(d * 2/100);
-        glColor3f(0, 1, 0);
-        glPushMatrix();
-            glBegin(GL_LINE_LOOP);
-                glVertex3f(-50.0f, 50.0f, 0.0f);
-                glVertex3f(-50.0f, -50.0f, 0.0f);
-                glVertex3f(50.0f, -50.0f, 0.0f);
-                glVertex3f(50.0f, 50.0f, 0.0f);
-            glEnd();
-        glPopMatrix();
-
-    glPopAttrib();
+void display()
+{
+    display3DScene();
+    display2DOverlay();
 
     glutSwapBuffers();
 }
