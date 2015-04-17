@@ -49,7 +49,7 @@ const int SCREEN_HEIGHT = 480;
 
 int w, h;
 float viewW, viewH, d;
-bool locked = false;
+bool locked = false, help = true;
 
 GLfloat lightPosition[] = {-200, 200, 200, 1};
 
@@ -63,9 +63,6 @@ void setProjection()
 void display2DOverlay(bool show = true)
 {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
         setProjection();
         float lineWidth = d * 2.0/100.0;
 
@@ -99,6 +96,50 @@ void display2DOverlay(bool show = true)
     glPopAttrib();
 }
 
+void displayHelp()
+{
+    float width = w*2.0;
+    float height = h*2.0;
+    float lineWidth = d * 2.0/100.0;
+    float paddingH = height * 10.0/100.0;
+    float paddingW = width * 10.0/100.0;
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        glViewport(0, 0, width, height);
+        glOrtho(0, width, height, 0, -d, d);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_SCISSOR_TEST);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glLineWidth(lineWidth);
+
+        glColor3f(0.5, 1, 0.5);
+
+        height -= paddingH;
+        width -= paddingW;
+
+        glPushMatrix();
+            glBegin(GL_QUADS);
+                glVertex3f(paddingW, paddingH, 0); // top left
+                glVertex3f(paddingW, height, 0); // bottom right
+                glVertex3f(width, height, 0); // bottom left
+                glVertex3f(width, paddingH, 0); // top left
+            glEnd();
+        glPopMatrix();
+
+    glPopAttrib();
+}
+
 void setActiveViewport(int x, int y)
 {
     // clear the overlay from every viewport
@@ -117,6 +158,12 @@ void setActiveViewport(int x, int y)
     glViewport(w, 0, w, h);
     glScissor(w, 0, w, h);
     display2DOverlay(false);
+
+    if(help)
+    {
+        activeViewport = NULL;
+        return;
+    }
 
     if(locked)
     {
@@ -236,10 +283,18 @@ void display3DScene()
 
 void display(bool overlay = true)
 {
-    display3DScene();
-    if(overlay)
+    if(help) // if help is enabled, just display it
     {
-        display2DOverlay();
+        displayHelp();
+    }
+    else
+    {
+        // otherwise display the 3D scene and (maybe) the current viewport's overlay
+        display3DScene();
+        if(overlay)
+        {
+            display2DOverlay();
+        }
     }
 
     glutSwapBuffers();
@@ -247,8 +302,11 @@ void display(bool overlay = true)
 
 void render()
 {
-    // update all viewports
-    if(activeViewport == NULL && !locked)
+    if(help) // if help is enabled, there's no need to do anything else
+    {
+        display();
+    }
+    else if(activeViewport == NULL && !locked) // update all viewports
     {
         // top left
         glViewport(0, h, w, h);
@@ -276,14 +334,14 @@ void render()
 
         activeViewport = NULL;
     }
-    else if(locked)
+    else if(locked) // update the phantom viewport (whole screen)
     {
         glViewport(0, 0, w*2, h*2);
         glScissor(0, 0, w*2, h*2);
         activeViewport = &phantomViewport;
         display(false);
     }
-    else
+    else // update the active viewport (part of screen)
     {
         display();
     }
@@ -396,9 +454,15 @@ void keyPress(unsigned char key, int x, int y)
 
     setActiveViewport(x, y);
 
+    //only use the keyboard after the help screen is closed
+    if(help && key != 'h' && key != 'H' && key != 27)
+    {
+        return;
+    }
+
     switch(key)
     {
-        case 'R':
+        case 'R': // reset all viewports
             activeViewport = NULL;
 
             for(int i=0; i<4; i++)
@@ -409,7 +473,7 @@ void keyPress(unsigned char key, int x, int y)
 
             render();
             break;
-        case 'r':
+        case 'r': // reset the current viewport
             activeViewport->reset();
             render();
             break;
@@ -421,6 +485,7 @@ void keyPress(unsigned char key, int x, int y)
 
             if(!locked)
             {
+                // upon unlocking, copy the settings to every viewport
                 for(int i=0; i<4; ++i)
                 {
                     viewports[i].angleX = phantomViewport.angleX;
@@ -429,6 +494,27 @@ void keyPress(unsigned char key, int x, int y)
                     viewports[i].translateY = phantomViewport.translateY;
                     viewports[i].zoom = phantomViewport.zoom;
                 }
+            }
+
+            render();
+            break;
+        case 'h':
+        case 'H':
+            help = !help;
+            printf("Help: %d\n", help);
+
+            if(help)
+            {
+                // no interaction possible during help screen
+                activeViewport = NULL;
+                glutMotionFunc(NULL);
+                glutMouseFunc(NULL);
+            }
+            else
+            {
+                //enable interaction
+                glutMotionFunc(mouseMove);
+                glutMouseFunc(mousePress);
             }
 
             render();
@@ -460,8 +546,8 @@ int main(int argc, char* args[])
     }
 
     glutKeyboardFunc(keyPress);
-    glutMotionFunc(mouseMove);
-    glutMouseFunc(mousePress);
+    glutMotionFunc(NULL);
+    glutMouseFunc(NULL);
     glutDisplayFunc(render);
     glutReshapeFunc(resize);
 
