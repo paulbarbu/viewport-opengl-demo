@@ -52,15 +52,93 @@ int w, h;
 
 float viewW, viewH, d;
 
+bool overlay = false;
+
 GLfloat lightPosition[] = {-200, 200, 200, 1};
+
+void setProjection()
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    if (w <= h)
+    {
+        d = w/2.0;
+        viewW = d;
+        viewH = d*(float)h/(float)w;
+
+    }
+    else
+    {
+        d = h/2.0;
+        viewW = d*(float)w/(float)h;
+        viewH = d;
+    }
+
+    glOrtho(-viewW, viewW, -viewH, viewH, -d, d);
+}
+
+void display2DOverlay(bool show = true)
+{
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        setProjection();
+        float lineWidth = d * 2.0/100.0;
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_LIGHTING);
+
+        glLineWidth(lineWidth);
+
+        if(show)
+        {
+            glColor3f(0, 1, 0);
+        }
+        else
+        {
+            glColor3f(0, 0, 0);
+        }
+
+        glPushMatrix();
+            glBegin(GL_LINE_LOOP);
+                glVertex3f(-viewW, viewH, 0); // top left
+                glVertex3f(-viewW, -viewH, 0); // bottom right
+                glVertex3f(viewW, -viewH, 0); // bottom left
+                glVertex3f(viewW, viewH, 0); // top left
+            glEnd();
+        glPopMatrix();
+
+    glPopAttrib();
+}
 
 void setActiveViewport(int x, int y)
 {
+    glViewport(0, h, w, h);
+    glScissor(0, h, w, h);
+    display2DOverlay(false);
+
+    glViewport(w, h, w, h);
+    glScissor(w, h, w, h);
+    display2DOverlay(false);
+
+    glViewport(0, 0, w, h);
+    glScissor(0, 0, w, h);
+    display2DOverlay(false);
+
+    glViewport(w, 0, w, h);
+    glScissor(w, 0, w, h);
+    display2DOverlay(false);
+
     if(x < 0 && y < 0)
     {
         activeViewport = NULL;
         printf("All viewports active\n");
-        return;
     }
 
     if (x < w && y < h)
@@ -80,6 +158,7 @@ void setActiveViewport(int x, int y)
         printf("Top right viewport active\n");
         return;
     }
+
 
     if (x < w && y > h) // bottom left
     {
@@ -136,59 +215,6 @@ bool initGL()
     return true;
 }
 
-void setProjection()
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    if (w <= h)
-    {
-        d = w/2.0;
-        viewW = d;
-        viewH = d*(float)h/(float)w;
-
-    }
-    else
-    {
-        d = h/2.0;
-        viewW = d*(float)w/(float)h;
-        viewH = d;
-    }
-
-    glOrtho(-viewW, viewW, -viewH, viewH, -d, d);
-}
-
-void display2DOverlay()
-{
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        setProjection();
-        float lineWidth = d * 2.0/100.0;
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_LIGHTING);
-
-        glLineWidth(lineWidth);
-        glColor3f(0, 1, 0);
-
-        glPushMatrix();
-            glBegin(GL_LINE_LOOP);
-                glVertex3f(-viewW, viewH, 0); // top left
-                glVertex3f(-viewW, -viewH, 0); // bottom right
-                glVertex3f(viewW, -viewH, 0); // bottom left
-                glVertex3f(viewW, viewH, 0); // top left
-            glEnd();
-        glPopMatrix();
-
-    glPopAttrib();
-}
-
 void display3DScene()
 {
     GLfloat mat_diffuse[] = {1, 1, 1, 1};
@@ -233,7 +259,10 @@ void display3DScene()
 void display()
 {
     display3DScene();
-    display2DOverlay();
+    if(activeViewport != NULL)
+    {
+        display2DOverlay();
+    }
 
     glutSwapBuffers();
 }
@@ -387,6 +416,7 @@ void keyPress(unsigned char key, int x, int y)
 
 int main(int argc, char* args[])
 {
+    activeViewport = NULL;
     viewports[0].init(45, 45, 0, 0, 1);
     viewports[2].init(0, -90, 0, 0, 1);
     viewports[3].init(-90, 0, 0, 0, 1);
