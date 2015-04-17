@@ -3,7 +3,6 @@
 #include <GL/glu.h>
 #include <stdio.h>
 
-//TODO: mark the active viewport
 //TODO: lock/unlock - when locked, transformations apply to everything
 
 struct viewport
@@ -49,10 +48,7 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 int w, h;
-
 float viewW, viewH, d;
-
-bool overlay = false;
 
 GLfloat lightPosition[] = {-200, 200, 200, 1};
 
@@ -60,21 +56,6 @@ void setProjection()
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    if (w <= h)
-    {
-        d = w/2.0;
-        viewW = d;
-        viewH = d*(float)h/(float)w;
-
-    }
-    else
-    {
-        d = h/2.0;
-        viewW = d*(float)w/(float)h;
-        viewH = d;
-    }
-
     glOrtho(-viewW, viewW, -viewH, viewH, -d, d);
 }
 
@@ -119,6 +100,7 @@ void display2DOverlay(bool show = true)
 
 void setActiveViewport(int x, int y)
 {
+    // clear the overlay from every viewport
     glViewport(0, h, w, h);
     glScissor(0, h, w, h);
     display2DOverlay(false);
@@ -159,7 +141,6 @@ void setActiveViewport(int x, int y)
         return;
     }
 
-
     if (x < w && y > h) // bottom left
     {
         glViewport(0, 0, w, h);
@@ -179,29 +160,18 @@ void setActiveViewport(int x, int y)
     }
 }
 
-void initLights()
-{
-    GLfloat ambient[] = {0.2, 0.2, 0.2, 1};
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-}
-
 bool initGL()
 {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    GLfloat ambientLight[] = {0.2, 0.2, 0.2, 1};
 
     glEnable(GL_SCISSOR_TEST);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     glEnable(GL_AUTO_NORMAL);
-    initLights();
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
 
     glClearColor(0, 0, 0, 1);
 
@@ -259,7 +229,7 @@ void display3DScene()
 void display(bool overlay = true)
 {
     display3DScene();
-    if(activeViewport != NULL && overlay)
+    if(overlay)
     {
         display2DOverlay();
     }
@@ -307,6 +277,20 @@ void resize(int width, int height)
     printf("Resize: w=%d\th=%d\n", width, height);
     w = width/2;
     h = height/2;
+
+    if (w <= h)
+    {
+        d = w/2.0;
+        viewW = d;
+        viewH = d*(float)h/(float)w;
+
+    }
+    else
+    {
+        d = h/2.0;
+        viewW = d*(float)w/(float)h;
+        viewH = d;
+    }
 
     activeViewport = NULL; // all viewports shall now be updated
 }
@@ -366,6 +350,7 @@ void mousePress(int button, int state, int x, int y)
 void mouseMove(int x, int y)
 {
     bool doRender = false;
+
     if(activeViewport->aix != -1 && activeViewport->aiy != -1)
     {
         activeViewport->angleX += y-activeViewport->aiy; // moving the mouse up/down (iy & y) rotates the scene on the X axis
