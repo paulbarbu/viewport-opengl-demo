@@ -3,7 +3,7 @@
 #include <GL/glu.h>
 #include <stdio.h>
 
-//TODO: instructions & help
+//TODO: render whole tea set
 
 struct viewport
 {
@@ -96,6 +96,16 @@ void display2DOverlay(bool show = true)
     glPopAttrib();
 }
 
+void displayCenterText(const char *s, float w)
+{
+    float fontH = glutBitmapHeight(GLUT_BITMAP_HELVETICA_12);
+
+    int l = glutBitmapLength(GLUT_BITMAP_HELVETICA_12, (const unsigned char*)s);
+    glRasterPos2f(w/2.0 - l/2.0, 0);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_12, (const unsigned char*)s);
+    glTranslatef(0, fontH, 0);
+}
+
 void displayHelp()
 {
     float width = w*2.0;
@@ -103,6 +113,7 @@ void displayHelp()
     float lineWidth = d * 2.0/100.0;
     float paddingH = height * 10.0/100.0;
     float paddingW = width * 10.0/100.0;
+    float fontH = glutBitmapHeight(GLUT_BITMAP_HELVETICA_18);
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
         glMatrixMode(GL_PROJECTION);
@@ -135,6 +146,34 @@ void displayHelp()
                 glVertex3f(width, height, 0); // bottom left
                 glVertex3f(width, paddingH, 0); // top left
             glEnd();
+
+
+            glPushMatrix();
+                glTranslatef(paddingW, paddingH + fontH, 0);
+                glColor3f(0, 0, 0);
+                displayCenterText("HELP!", width-paddingW);
+                displayCenterText("\n", width-paddingW);
+                displayCenterText("\n", width-paddingW);
+                displayCenterText("\n", width-paddingW);
+
+                displayCenterText("Definition:", width-paddingW);
+                displayCenterText("Current viewport - the viewport where the mouse is located when an action is performed", width-paddingW);
+
+                displayCenterText("\n", width-paddingW);
+                displayCenterText("Keybindings:", width-paddingW);
+                displayCenterText("R - reset current viewport", width-paddingW);
+                displayCenterText("SHIFT+R - reset all viewports", width-paddingW);
+                displayCenterText("H - toggle this help screen", width-paddingW);
+                displayCenterText("L - toggle a global viewport (its settings will be applied to all viewports)", width-paddingW);
+                displayCenterText("ESC - exit", width-paddingW);
+
+                displayCenterText("\n", width-paddingW);
+                displayCenterText("Mouse:", width-paddingW);
+                displayCenterText("Scroll up/down - zoom in/out on the current viewport", width-paddingW);
+                displayCenterText("Left click + drag - translate the current viewport", width-paddingW);
+                displayCenterText("Right click + drag - rotate the current viewport", width-paddingW);
+
+            glPopMatrix();
         glPopMatrix();
 
     glPopAttrib();
