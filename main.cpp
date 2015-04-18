@@ -46,6 +46,7 @@ struct viewport
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+const float ZOOM_STEP = 0.05;
 
 int w, h;
 float viewW, viewH, d;
@@ -250,6 +251,15 @@ void setActiveViewport(int x, int y)
     }
 }
 
+void drawLegBottom(GLUquadricObj* quadric)
+{
+    glPushMatrix();
+        glTranslatef(0, -75, 0);
+        glRotatef(90, 1, 0, 0);
+        gluDisk(quadric, 0, 5, 360, 1);
+    glPopMatrix();
+}
+
 void createScene()
 {
     // http://devernay.free.fr/cours/opengl/materials.html
@@ -270,17 +280,75 @@ void createScene()
 
     scene = glGenLists(1);
     glNewList(scene, GL_COMPILE);
+        GLUquadricObj* quadric = gluNewQuadric();
+        gluQuadricDrawStyle(quadric, GLU_FILL);
+
+        glMaterialfv(GL_FRONT, GL_AMBIENT, pearlAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, pearlDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, pearlSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, pearlShininess);
+
+        // 70.71 = sqrt(100^2/2)
+        glBegin(GL_QUADS); // table top & bottom
+            glVertex3f(-70.71, -6.5, -70.71);
+            glVertex3f(70.71, -6.5, -70.71);
+            glVertex3f(70.71, -6.5, 70.71);
+            glVertex3f(-70.71, -6.5, 70.71);
+
+            glVertex3f(-70.71, -10.5, -70.71);
+            glVertex3f(70.71, -10.5, -70.71);
+            glVertex3f(70.71, -10.5, 70.71);
+            glVertex3f(-70.71, -10.5, 70.71);
+        glEnd();
+
+        glPushMatrix(); // table margins
+            glTranslatef(0, -6.5, 0);
+            glRotatef(45, 0, 1, 0);
+            glRotatef(90, 1, 0, 0);
+            gluCylinder(quadric, 100, 100, 5, 4, 1);
+        glPopMatrix();
+
+        // table legs
+        glPushMatrix();
+            glTranslatef(-50, -10.5, -50);
+            drawLegBottom(quadric);
+            glRotatef(90, 1, 0, 0);
+
+            gluCylinder(quadric, 5, 5, 75, 360, 1);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(50, -10.5, -50);
+            drawLegBottom(quadric);
+            glRotatef(90, 1, 0, 0);
+
+            gluCylinder(quadric, 5, 5, 75, 360, 1);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(50, -10.5, 50);
+            drawLegBottom(quadric);
+            glRotatef(90, 1, 0, 0);
+
+            gluCylinder(quadric, 5, 5, 75, 360, 1);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(-50, -10.5, 50);
+            drawLegBottom(quadric);
+            glRotatef(90, 1, 0, 0);
+
+            gluCylinder(quadric, 5, 5, 75, 360, 1);
+        glPopMatrix();
+
+        //objects on the table
         glMaterialfv(GL_FRONT, GL_AMBIENT, pearlAmbient);
         glMaterialfv(GL_FRONT, GL_DIFFUSE, pearlDiffuse);
         glMaterialfv(GL_FRONT, GL_SPECULAR, pearlSpecular);
         glMaterialfv(GL_FRONT, GL_SHININESS, pearlShininess);
 
         glPushMatrix();
-            glutSolidTeapot(20);
-        glPopMatrix();
-
-        glPushMatrix();
-            glTranslatef(100, 0, 0);
+            glTranslatef(0, 9.5, 0);
             glutSolidTeapot(20);
         glPopMatrix();
 
@@ -288,9 +356,15 @@ void createScene()
         glMaterialfv(GL_FRONT, GL_DIFFUSE, porcelainDiffuse);
         glMaterialfv(GL_FRONT, GL_SPECULAR, porcelainSpecular);
         glMaterialfv(GL_FRONT, GL_SHININESS, porcelainShininess);
+        glPushMatrix();
+            glTranslatef(50, 0, -50);
+            glRotatef(-55, 0, 1, 0);
+            glutSolidTeacup(20);
+        glPopMatrix();
 
         glPushMatrix();
-            glTranslatef(100, 0, -100);
+            glTranslatef(-50, 0, 50);
+            glRotatef(35, 0, 1, 0);
             glutSolidTeacup(20);
         glPopMatrix();
 
@@ -299,18 +373,16 @@ void createScene()
         glMaterialfv(GL_FRONT, GL_SPECULAR, whiteRubberSpecular);
         glMaterialfv(GL_FRONT, GL_SHININESS, whiteRubberShininess);
         glPushMatrix();
-            glTranslatef(0, 0, -100);
+            glTranslatef(50, -3.6, -60); // place it on the plate
+            glRotatef(90, 0, 1, 0);
+            glRotatef(5, 1, 0, 0);
             glutSolidTeaspoon(20);
         glPopMatrix();
 
         glPushMatrix();
-            glTranslatef(50, 0, -100);
+            glTranslatef(-50, 0, 50); // place it inside the cup
+            glRotatef(-41, 1, 0, 0);
             glutSolidTeaspoon(20);
-        glPopMatrix();
-
-        glPushMatrix();
-            glTranslatef(-100, 0, 0);
-            glutSolidTeapot(20);
         glPopMatrix();
     glEndList();
 }
@@ -499,9 +571,9 @@ void mousePress(int button, int state, int x, int y)
             break;
         case 3: // scroll up
 
-            if(activeViewport->zoom > 0.1)
+            if(activeViewport->zoom > ZOOM_STEP)
             {
-                activeViewport->zoom -= 0.1;
+                activeViewport->zoom -= ZOOM_STEP;
                 glutPostRedisplay();
             }
             printf("scroll up\n");
@@ -509,7 +581,7 @@ void mousePress(int button, int state, int x, int y)
         case 4: // scroll down
             if(activeViewport->zoom < 2)
             {
-                activeViewport->zoom += 0.1;
+                activeViewport->zoom += ZOOM_STEP;
                 glutPostRedisplay();
             }
             printf("scroll down\n");
