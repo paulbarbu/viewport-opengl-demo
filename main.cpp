@@ -67,7 +67,6 @@ void display2DOverlay(bool show = true)
         glLoadIdentity();
 
         glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
         glDisable(GL_LIGHTING);
 
         glLineWidth(lineWidth);
@@ -123,7 +122,6 @@ void displayHelp()
         glLoadIdentity();
 
         glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
         glDisable(GL_LIGHTING);
         glDisable(GL_SCISSOR_TEST);
 
