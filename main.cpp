@@ -502,13 +502,13 @@ void mousePress(int button, int state, int x, int y)
             if(activeViewport->zoom > 0.1)
             {
                 activeViewport->zoom -= 0.1;
-                render(); //TODO: glutPostRedisplay()
+                glutPostRedisplay();
             }
             printf("scroll up\n");
             break;
         case 4: // scroll down
                 activeViewport->zoom += 0.1;
-                render();
+                glutPostRedisplay();
             printf("scroll down\n");
             break;
     }
@@ -536,7 +536,10 @@ void mouseMove(int x, int y)
         doRender = true;
     }
 
-    if(doRender) render();
+    if(doRender)
+    {
+        glutPostRedisplay();
+    }
 }
 
 void keyPress(unsigned char key, int x, int y)
@@ -563,11 +566,11 @@ void keyPress(unsigned char key, int x, int y)
             }
             phantomViewport.reset();
 
-            render();
+            glutPostRedisplay();
             break;
         case 'r': // reset the current viewport
             activeViewport->reset();
-            render();
+            glutPostRedisplay();
             break;
         case 'l':
             locked = !locked;
@@ -588,7 +591,7 @@ void keyPress(unsigned char key, int x, int y)
                 }
             }
 
-            render();
+            glutPostRedisplay();
             break;
         case 'h':
         case 'H':
@@ -609,7 +612,7 @@ void keyPress(unsigned char key, int x, int y)
                 glutMouseFunc(mousePress);
             }
 
-            render();
+            glutPostRedisplay();
             break;
         case 27: //ESC
             glutLeaveMainLoop();
