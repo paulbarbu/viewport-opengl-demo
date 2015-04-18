@@ -53,17 +53,13 @@ bool locked = false, help = true;
 
 GLuint scene;
 
-void setProjection()
-{
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-viewW, viewW, -viewH, viewH, -d, d);
-}
-
 void display2DOverlay(bool show = true)
 {
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-        setProjection();
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-viewW, viewW, -viewH, viewH, -1, 1);
+
         float lineWidth = d * 2.0/100.0;
 
         glMatrixMode(GL_MODELVIEW);
@@ -120,7 +116,7 @@ void displayHelp()
         glLoadIdentity();
 
         glViewport(0, 0, width, height);
-        glOrtho(0, width, height, 0, -d, d);
+        glOrtho(0, width, height, 0, -1, 1);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
@@ -350,14 +346,23 @@ bool initGL()
 
 void display3DScene()
 {
-    setProjection();
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    float zoomFactor = 1;
+    if(activeViewport)
+    {
+        zoomFactor = activeViewport->zoom;
+    }
+
+    glOrtho(-viewW*zoomFactor, viewW*zoomFactor, -viewH*zoomFactor, viewH*zoomFactor, -200, 200);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glPushMatrix();
-        glScalef(activeViewport->zoom, activeViewport->zoom, activeViewport->zoom);
         glTranslatef(activeViewport->translateX, activeViewport->translateY, 0);
         glRotatef(activeViewport->angleX, 1, 0, 0);
         glRotatef(activeViewport->angleY, 0, 1, 0);
@@ -493,16 +498,17 @@ void mousePress(int button, int state, int x, int y)
             }
             break;
         case 3: // scroll up
-            activeViewport->zoom += 0.1;
-            render();
-            printf("scroll up\n");
-            break;
-        case 4: // scroll down
+
             if(activeViewport->zoom > 0.1)
             {
                 activeViewport->zoom -= 0.1;
-                render();
+                render(); //TODO: glutPostRedisplay()
             }
+            printf("scroll up\n");
+            break;
+        case 4: // scroll down
+                activeViewport->zoom += 0.1;
+                render();
             printf("scroll down\n");
             break;
     }
