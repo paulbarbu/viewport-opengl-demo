@@ -305,9 +305,9 @@ void createScene()
         // 70.71 = sqrt(100^2/2)
         glBegin(GL_QUADS); // table top & bottom
             glVertex3f(-70.71, -6.5, -70.71);
-            glVertex3f(70.71, -6.5, -70.71);
-            glVertex3f(70.71, -6.5, 70.71);
             glVertex3f(-70.71, -6.5, 70.71);
+            glVertex3f(70.71, -6.5, 70.71);
+            glVertex3f(70.71, -6.5, -70.71);
 
             glVertex3f(-70.71, -10.5, -70.71);
             glVertex3f(70.71, -10.5, -70.71);
