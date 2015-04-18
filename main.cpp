@@ -51,7 +51,7 @@ int w, h;
 float viewW, viewH, d;
 bool locked = false, help = true;
 
-GLfloat lightPosition[] = {-200, 200, 200, 1};
+GLuint scene;
 
 void setProjection()
 {
@@ -254,9 +254,75 @@ void setActiveViewport(int x, int y)
     }
 }
 
+void createScene()
+{
+    // http://devernay.free.fr/cours/opengl/materials.html
+    GLfloat pearlAmbient[] = {0.25, 0.20725, 0.20725, 1};
+    GLfloat pearlDiffuse[] = {1, 0.829, 0.829, 1};
+    GLfloat pearlSpecular[] = {0.296648, 0.296648, 0.296648, 1};
+    GLfloat pearlShininess[] = {0.088 * 128};
+
+    GLfloat whiteRubberAmbient[] = {0.05, 0.05, 0.05, 1};
+    GLfloat whiteRubberDiffuse[] = {0.5, 0.5, 0.5, 1};
+    GLfloat whiteRubberSpecular[] = {0.7, 0.7, 0.7, 1};
+    GLfloat whiteRubberShininess[] = {0.078125 * 128};
+
+    GLfloat porcelainAmbient[] = {0.2, 0.2, 0.2, 1};
+    GLfloat porcelainDiffuse[] = {1, 1, 1, 1};
+    GLfloat porcelainSpecular[] = {1, 1, 1, 1};
+    GLfloat porcelainShininess[] = {0.3 * 128};
+
+    scene = glGenLists(1);
+    glNewList(scene, GL_COMPILE);
+        glMaterialfv(GL_FRONT, GL_AMBIENT, pearlAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, pearlDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, pearlSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, pearlShininess);
+
+        glPushMatrix();
+            glutSolidTeapot(20);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(100, 0, 0);
+            glutSolidTeapot(20);
+        glPopMatrix();
+
+        glMaterialfv(GL_FRONT, GL_AMBIENT, porcelainAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, porcelainDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, porcelainSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, porcelainShininess);
+
+        glPushMatrix();
+            glTranslatef(100, 0, -100);
+            glutSolidTeacup(20);
+        glPopMatrix();
+
+        glMaterialfv(GL_FRONT, GL_AMBIENT, whiteRubberAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, whiteRubberDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, whiteRubberSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, whiteRubberShininess);
+        glPushMatrix();
+            glTranslatef(0, 0, -100);
+            glutSolidTeaspoon(20);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(50, 0, -100);
+            glutSolidTeaspoon(20);
+        glPopMatrix();
+
+        glPushMatrix();
+            glTranslatef(-100, 0, 0);
+            glutSolidTeapot(20);
+        glPopMatrix();
+    glEndList();
+}
+
 bool initGL()
 {
-    GLfloat ambientLight[] = {0.2, 0.2, 0.2, 1};
+    GLfloat ambientLight[] = {1, 1, 1, 1};
+    GLfloat lightPosition[] = {-200, 200, 200, 1};
 
     glEnable(GL_SCISSOR_TEST);
     glEnable(GL_DEPTH_TEST);
@@ -266,8 +332,11 @@ bool initGL()
     glEnable(GL_LIGHT0);
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glClearColor(0, 0, 0, 1);
+
+    createScene();
 
     GLenum error = glGetError();
     if(error != GL_NO_ERROR)
@@ -281,17 +350,11 @@ bool initGL()
 
 void display3DScene()
 {
-    GLfloat mat_diffuse[] = {1, 1, 1, 1};
-    GLfloat mat_specular[] = {1, 1, 1, 1};
-    GLfloat mat_shininess[] = {50};
-
     setProjection();
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
     glPushMatrix();
         glScalef(activeViewport->zoom, activeViewport->zoom, activeViewport->zoom);
@@ -299,23 +362,7 @@ void display3DScene()
         glRotatef(activeViewport->angleX, 1, 0, 0);
         glRotatef(activeViewport->angleY, 0, 1, 0);
 
-        glPushMatrix();
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-            glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-            glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-            glutSolidTeapot(20);
-        glPopMatrix();
-
-        glPushMatrix();
-            glTranslatef(100, 0, 0);
-            glutSolidTeapot(20);
-        glPopMatrix();
-
-        glPushMatrix();
-            glTranslatef(-100, 0, 0);
-            glutSolidTeapot(20);
-        glPopMatrix();
-
+        glCallList(scene);
     glPopMatrix();
 }
 
