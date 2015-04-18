@@ -507,8 +507,11 @@ void mousePress(int button, int state, int x, int y)
             printf("scroll up\n");
             break;
         case 4: // scroll down
+            if(activeViewport->zoom < 2)
+            {
                 activeViewport->zoom += 0.1;
                 glutPostRedisplay();
+            }
             printf("scroll down\n");
             break;
     }
@@ -540,6 +543,12 @@ void mouseMove(int x, int y)
     {
         glutPostRedisplay();
     }
+}
+
+void mouseHover(int x, int y)
+{
+    setActiveViewport(x, y);
+    glutPostRedisplay();
 }
 
 void keyPress(unsigned char key, int x, int y)
@@ -609,6 +618,7 @@ void keyPress(unsigned char key, int x, int y)
             {
                 //enable interaction
                 glutMotionFunc(mouseMove);
+                glutPassiveMotionFunc(mouseHover);
                 glutMouseFunc(mousePress);
             }
 
@@ -619,6 +629,7 @@ void keyPress(unsigned char key, int x, int y)
             break;
     }
 }
+
 
 int main(int argc, char* args[])
 {
@@ -642,6 +653,7 @@ int main(int argc, char* args[])
 
     glutKeyboardFunc(keyPress);
     glutMotionFunc(NULL);
+    glutPassiveMotionFunc(NULL);
     glutMouseFunc(NULL);
     glutDisplayFunc(render);
     glutReshapeFunc(resize);
