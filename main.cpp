@@ -260,6 +260,15 @@ void drawLegBottom(GLUquadricObj* quadric)
     glPopMatrix();
 }
 
+void drawTeacupBottom(GLUquadricObj* quadric)
+{
+    glPushMatrix();
+        glTranslatef(0, -6.48, 0);
+        glRotatef(-90, 1, 0, 0);
+        gluDisk(quadric, 0, 5, 360, 1);
+    glPopMatrix();
+}
+
 void createScene()
 {
     // http://devernay.free.fr/cours/opengl/materials.html
@@ -278,15 +287,20 @@ void createScene()
     GLfloat porcelainSpecular[] = {1, 1, 1, 1};
     GLfloat porcelainShininess[] = {0.3 * 128};
 
+    GLfloat woodAmbient[] = {0.2125, 0.1275, 0.054, 1};
+    GLfloat woodDiffuse[] = {0.714, 0.4284, 0.18144, 1};
+    GLfloat woodSpecular[] = {0.393548, 0.271906, 0.166721, 1};
+    GLfloat woodShininess[] = {0.9 * 128};
+
     scene = glGenLists(1);
     glNewList(scene, GL_COMPILE);
         GLUquadricObj* quadric = gluNewQuadric();
         gluQuadricDrawStyle(quadric, GLU_FILL);
 
-        glMaterialfv(GL_FRONT, GL_AMBIENT, pearlAmbient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, pearlDiffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, pearlSpecular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, pearlShininess);
+        glMaterialfv(GL_FRONT, GL_AMBIENT, woodAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, woodDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, woodSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, woodShininess);
 
         // 70.71 = sqrt(100^2/2)
         glBegin(GL_QUADS); // table top & bottom
@@ -309,6 +323,11 @@ void createScene()
         glPopMatrix();
 
         // table legs
+        glMaterialfv(GL_FRONT, GL_AMBIENT, whiteRubberAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, whiteRubberDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, whiteRubberSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, whiteRubberShininess);
+
         glPushMatrix();
             glTranslatef(-50, -10.5, -50);
             drawLegBottom(quadric);
@@ -358,12 +377,15 @@ void createScene()
         glMaterialfv(GL_FRONT, GL_SHININESS, porcelainShininess);
         glPushMatrix();
             glTranslatef(50, 0, -50);
+            drawTeacupBottom(quadric);
             glRotatef(-55, 0, 1, 0);
             glutSolidTeacup(20);
         glPopMatrix();
 
+
         glPushMatrix();
             glTranslatef(-50, 0, 50);
+            drawTeacupBottom(quadric);
             glRotatef(35, 0, 1, 0);
             glutSolidTeacup(20);
         glPopMatrix();
