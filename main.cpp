@@ -1,9 +1,8 @@
 #include <GL/freeglut.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <SOIL.h>
 #include <stdio.h>
-
-//TODO: render whole tea set
 
 struct viewport
 {
@@ -53,6 +52,7 @@ float viewW, viewH, d;
 bool locked = false, help = true;
 
 GLuint scene;
+GLuint tex[2];
 
 void display2DOverlay(bool show = true)
 {
@@ -270,10 +270,10 @@ void drawTeacupBottom(GLUquadricObj* quadric)
 void createScene()
 {
     // http://devernay.free.fr/cours/opengl/materials.html
-    GLfloat pearlAmbient[] = {0.25, 0.20725, 0.20725, 1};
-    GLfloat pearlDiffuse[] = {1, 0.829, 0.829, 1};
-    GLfloat pearlSpecular[] = {0.296648, 0.296648, 0.296648, 1};
-    GLfloat pearlShininess[] = {0.088 * 128};
+	GLfloat chromeAmbient[] = {0.3, 0.3, 0.3, 1};
+    GLfloat chromeDiffuse[] = {0.8, 0.8, 0.8, 1};
+	GLfloat chromeSpecular[] = {1, 1, 1, 1}; //0.774597, 0.774597, 0.774597, 1};
+    GLfloat chromeShininess[] = {0.6 * 128};
 
     GLfloat whiteRubberAmbient[] = {0.05, 0.05, 0.05, 1};
     GLfloat whiteRubberDiffuse[] = {0.5, 0.5, 0.5, 1};
@@ -291,8 +291,12 @@ void createScene()
     GLfloat woodShininess[] = {0.9 * 128};
 
     scene = glGenLists(1);
+	
     glNewList(scene, GL_COMPILE);
-        GLUquadricObj* quadric = gluNewQuadric();
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, tex[1]);
+
+		GLUquadricObj* quadric = gluNewQuadric();
         gluQuadricDrawStyle(quadric, GLU_FILL);
 
         glMaterialfv(GL_FRONT, GL_AMBIENT, woodAmbient);
@@ -302,23 +306,35 @@ void createScene()
 
         // 70.71 = sqrt(100^2/2)
         glBegin(GL_QUADS); // table top & bottom
+			glTexCoord2f(0, 1);
             glVertex3f(-70.71, -6.5, -70.71);
+			glTexCoord2f(0, 0);
             glVertex3f(-70.71, -6.5, 70.71);
+			glTexCoord2f(1, 0);
             glVertex3f(70.71, -6.5, 70.71);
+			glTexCoord2f(1, 1);
             glVertex3f(70.71, -6.5, -70.71);
 
+			glTexCoord2f(0, 1);
             glVertex3f(-70.71, -10.5, -70.71);
+			glTexCoord2f(1, 1);
             glVertex3f(70.71, -10.5, -70.71);
+			glTexCoord2f(1, 0);
             glVertex3f(70.71, -10.5, 70.71);
+			glTexCoord2f(0, 0);
             glVertex3f(-70.71, -10.5, 70.71);
         glEnd();
 
-        glPushMatrix(); // table margins
+        glPushMatrix(); // table margins		
+			gluQuadricTexture(quadric, GLU_TRUE);
             glTranslatef(0, -6.5, 0);
             glRotatef(45, 0, 1, 0);
             glRotatef(90, 1, 0, 0);
-            gluCylinder(quadric, 100, 100, 5, 4, 1);
+            gluCylinder(quadric, 100, 100, 5, 4, 1);					
+			gluQuadricTexture(quadric, GLU_FALSE);
         glPopMatrix();
+
+		glDisable(GL_TEXTURE_2D);
 
         // table legs
         glMaterialfv(GL_FRONT, GL_AMBIENT, whiteRubberAmbient);
@@ -359,15 +375,18 @@ void createScene()
         glPopMatrix();
 
         //objects on the table
-        glMaterialfv(GL_FRONT, GL_AMBIENT, pearlAmbient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, pearlDiffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, pearlSpecular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, pearlShininess);
+        glMaterialfv(GL_FRONT, GL_AMBIENT, chromeAmbient);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, chromeDiffuse);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, chromeSpecular);
+        glMaterialfv(GL_FRONT, GL_SHININESS, chromeShininess);
+		glBindTexture(GL_TEXTURE_2D, tex[0]);
 
+		glEnable(GL_TEXTURE_2D);
         glPushMatrix();
             glTranslatef(0, 9.5, 0);
             glutSolidTeapot(20);
         glPopMatrix();
+		glDisable(GL_TEXTURE_2D);
 
         glMaterialfv(GL_FRONT, GL_AMBIENT, porcelainAmbient);
         glMaterialfv(GL_FRONT, GL_DIFFUSE, porcelainDiffuse);
@@ -421,6 +440,49 @@ bool initGL()
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	
+	/*
+	glGenTextures(2, tex);	
+	glBindTexture(GL_TEXTURE_2D, tex[0]);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);//GL_MODULATE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+
+	float blackWhite[] = {
+		0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
+	};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_FLOAT, blackWhite);
+	*/
+
+	tex[0] = SOIL_load_OGL_texture("reflection.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
+    glBindTexture(GL_TEXTURE_2D, tex[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	
+	if( 0 == tex[0])
+	{
+		printf("SOIL loading error: '%s'\n", SOIL_last_result());
+	}
+		
+	tex[1] = SOIL_load_OGL_texture("wood.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
+    glBindTexture(GL_TEXTURE_2D, tex[1]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	
+	if( 0 == tex[1])
+	{
+		printf("SOIL loading error: '%s'\n", SOIL_last_result());
+	}
 
     glClearColor(0, 0, 0, 1);
 
